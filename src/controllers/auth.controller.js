@@ -1,5 +1,6 @@
 import userModel from "../models/user.model.js";
 import jwt from 'jsonwebtoken';
+import sendRegistrationEmail from "../services/email.service.js";       
 
 
 export const register = async (req, res) => {
@@ -24,7 +25,11 @@ export const register = async (req, res) => {
             secure: process.env.NODE_ENV === 'production'});
 
 
-            return res.status(201).json({ message: "User registered successfully", user:{userId: user._id,name:user.name,email:user.email}, token, status:"success" });
+
+             res.status(201).json({ message: "User registered successfully", user:{userId: user._id,name:user.name,email:user.email}, token, status:"success" });
+
+             await sendRegistrationEmail(email, name);
+
         
     } catch (error) {
         res.status(500).json({ message: "Internal server error", status:"failed", error: error.message });
@@ -37,7 +42,7 @@ export const login = async (req, res) => {
         if(!email || !password){
             return res.status(400).json({ message: "All fields are required", status:"failed" });
         }
-        const user = await userModel.findOne({ email });
+        const user = await userModel.findOne({ email }).select('+password');
         if (!user) {
             return res.status(400).json({ message: "Invalid credentials", status:"failed" });
         }
